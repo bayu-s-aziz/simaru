@@ -4,7 +4,7 @@ import 'package:simaru/controllers/login_controller.dart';
 
 class LoginScreen extends GetView<LoginController> {
   const LoginScreen({super.key});
-  final Color unigalColor = const Color(0xFF003366);
+  final Color unigalColor = const Color(0xFF592974);
 
   @override
   Widget build(BuildContext context) {
