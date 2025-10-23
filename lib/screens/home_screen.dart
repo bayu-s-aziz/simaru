@@ -179,7 +179,7 @@ class HomeScreen extends GetView<HomeController> {
             Get.snackbar(
               "Info",
               "Fitur '${item['label']}' segera hadir!",
-              snackPosition: SnackPosition.BOTTOM,
+              snackPosition: SnackPosition.TOP,
             );
           },
         );

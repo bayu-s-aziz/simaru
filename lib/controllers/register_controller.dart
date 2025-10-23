@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:simaru/services/login_service.dart';
+import 'package:simaru/services/register_service.dart';
 
 class LoginController extends GetxController {
-  // Instance LoginService didaftarkan saat controller ini dibuat
-  final LoginService _service = Get.put(LoginService());
+  // Instance RegisterService didaftarkan saat controller ini dibuat
+  final RegisterService _service = Get.put(RegisterService());
 
   // State untuk loading, .obs membuatnya reaktif
   var isLoading = false.obs;
 
   // Controller untuk TextField
+  final nameController = TextEditingController();
+  final passwordConfirmationController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  // Fungsi login
-  Future<void> login() async {
+  Future<void> register() async {
+    final name = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
+    final passwordConfirmation = passwordConfirmationController.text.trim();
 
     // Validasi input sederhana
     if (email.isEmpty || password.isEmpty) {
@@ -33,7 +36,12 @@ class LoginController extends GetxController {
       isLoading.value = true; // Mulai loading -> UI akan update via Obx
 
       // Panggil service untuk login
-      final response = await _service.login(email, password);
+      final response = await _service.register(
+        name,
+        email,
+        password,
+        passwordConfirmation,
+      );
 
       // Cek response dari API
       if (response != null && response['accessToken'] != null) {
