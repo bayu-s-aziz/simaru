@@ -3,22 +3,18 @@ import 'package:get/get.dart';
 import 'package:simaru/services/login_service.dart';
 
 class LoginController extends GetxController {
-  // Instance LoginService didaftarkan saat controller ini dibuat
-  final LoginService _service = Get.put(LoginService());
+  // Gunakan Get.find() karena service didaftarkan di LoginBinding
+  final LoginService _service = Get.find<LoginService>();
 
-  // State untuk loading, .obs membuatnya reaktif
   var isLoading = false.obs;
 
-  // Controller untuk TextField
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  // Fungsi login
   Future<void> login() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    // Validasi input sederhana
     if (email.isEmpty || password.isEmpty) {
       Get.snackbar(
         'Error',
@@ -28,48 +24,60 @@ class LoginController extends GetxController {
       );
       return;
     }
+    if (!GetUtils.isEmail(email)) {
+      Get.snackbar(
+        'Error',
+        'Format email tidak valid',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
     try {
-      isLoading.value = true; // Mulai loading -> UI akan update via Obx
-
-      // Panggil service untuk login
+      isLoading.value = true;
       final response = await _service.login(email, password);
 
-      // Cek response dari API
+      // Pastikan response tidak null DAN ada access token
       if (response != null && response['accessToken'] != null) {
-        String userName = response['user']?['name'] ?? 'Pengguna Baru';
+        // Ambil 'name' dari 'user' object, berikan default jika null
+        String userName =
+            response['user']?['name'] ?? 'Pengguna'; // Default 'Pengguna'
 
         Get.snackbar(
           'Sukses',
-          'Login berhasil',
+          'Login berhasil!',
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
 
+        // Kirim 'userName' (yang berisi 'name' dari API) sebagai argumen
         Get.offAllNamed('/home', arguments: userName);
       } else {
-        // Jika response tidak valid atau tidak ada accessToken
+        // Ambil pesan error dari API jika ada, atau gunakan pesan default
+        String errorMessage =
+            response?['message'] ?? 'Email atau password salah.';
         Get.snackbar(
           'Gagal',
-          'Email atau password salah',
+          errorMessage,
           backgroundColor: Colors.orange,
           colorText: Colors.white,
         );
       }
     } catch (e) {
-      // Tangani error jika terjadi saat pemanggilan API
       Get.snackbar(
         'Error',
-        'Terjadi kesalahan: $e',
+        e is Exception
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'Terjadi kesalahan tidak diketahui',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
     } finally {
-      isLoading.value = false; // Hentikan loading -> UI akan update
+      isLoading.value = false;
     }
   }
 
-  // Bersihkan controller TextField saat controller ini tidak digunakan lagi
   @override
   void onClose() {
     emailController.dispose();

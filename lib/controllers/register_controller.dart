@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:simaru/services/register_service.dart';
+import 'package:simaru/services/register_service.dart'; // Pastikan path import benar
 
-class LoginController extends GetxController {
-  // Instance RegisterService didaftarkan saat controller ini dibuat
-  final RegisterService _service = Get.put(RegisterService());
+class RegisterController extends GetxController {
+  final RegisterService _service = Get.find<RegisterService>();
 
-  // State untuk loading, .obs membuatnya reaktif
   var isLoading = false.obs;
 
-  // Controller untuk TextField
   final nameController = TextEditingController();
-  final passwordConfirmationController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final passwordConfirmationController = TextEditingController();
 
   Future<void> register() async {
     final name = nameController.text.trim();
@@ -21,11 +18,41 @@ class LoginController extends GetxController {
     final password = passwordController.text.trim();
     final passwordConfirmation = passwordConfirmationController.text.trim();
 
-    // Validasi input sederhana
-    if (email.isEmpty || password.isEmpty) {
+    // Validasi input
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        passwordConfirmation.isEmpty) {
       Get.snackbar(
         'Error',
-        'Email dan Password harus diisi',
+        'Semua field harus diisi',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    if (!GetUtils.isEmail(email)) {
+      Get.snackbar(
+        'Error',
+        'Format email tidak valid',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    if (password != passwordConfirmation) {
+      Get.snackbar(
+        'Error',
+        'Password dan konfirmasi password tidak cocok',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    if (password.length < 8) {
+      Get.snackbar(
+        'Error',
+        'Password minimal harus 8 karakter',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -33,9 +60,7 @@ class LoginController extends GetxController {
     }
 
     try {
-      isLoading.value = true; // Mulai loading -> UI akan update via Obx
-
-      // Panggil service untuk login
+      isLoading.value = true;
       final response = await _service.register(
         name,
         email,
@@ -43,45 +68,48 @@ class LoginController extends GetxController {
         passwordConfirmation,
       );
 
-      // Cek response dari API
-      if (response != null && response['accessToken'] != null) {
-        String userName = response['user']?['name'] ?? 'Pengguna Baru';
-
+      // --- PERBAIKAN KONDISI SUKSES ---
+      // Asumsikan jika response TIDAK null, berarti registrasi sukses (karena service sudah cek status code 200/201)
+      if (response != null) {
         Get.snackbar(
-          'Sukses',
-          'Login berhasil',
-          backgroundColor: Colors.green,
+          'Sukses', // <-- Judul diubah
+          'Registrasi berhasil! Silakan login.',
+          backgroundColor: Colors.green, // <-- Warna hijau
           colorText: Colors.white,
         );
-
-        Get.offAllNamed('/home', arguments: userName);
+        Get.offNamed('/login');
       } else {
-        // Jika response tidak valid atau tidak ada accessToken
+        // Jika response null (karena status code bukan 200/201 atau ada masalah lain di service)
+        // Anda bisa mencoba mendapatkan detail error dari response service jika dimungkinkan,
+        // tapi untuk sekarang kita tampilkan pesan umum.
         Get.snackbar(
           'Gagal',
-          'Email atau password salah',
+          'Registrasi gagal. Server mungkin mengembalikan error atau email sudah terdaftar.', // Pesan error lebih informatif
           backgroundColor: Colors.orange,
           colorText: Colors.white,
         );
       }
+      // --- AKHIR PERBAIKAN ---
     } catch (e) {
-      // Tangani error jika terjadi saat pemanggilan API
       Get.snackbar(
         'Error',
-        'Terjadi kesalahan: $e',
+        e is Exception
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'Terjadi kesalahan tidak diketahui',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
     } finally {
-      isLoading.value = false; // Hentikan loading -> UI akan update
+      isLoading.value = false;
     }
   }
 
-  // Bersihkan controller TextField saat controller ini tidak digunakan lagi
   @override
   void onClose() {
+    nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    passwordConfirmationController.dispose();
     super.onClose();
   }
 }

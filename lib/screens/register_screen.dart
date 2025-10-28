@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:simaru/controllers/register_controller.dart';
+import 'package:simaru/controllers/register_controller.dart'; // Import controller yang benar
 
-class LoginScreen extends GetView<LoginController> {
-  const LoginScreen({super.key});
+// Ganti nama class menjadi RegisterScreen
+class RegisterScreen extends GetView<RegisterController> {
+  // Ganti generic type
+  const RegisterScreen({super.key});
   final Color unigalColor = const Color(0xFF592974);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Tambahkan AppBar
+      appBar: AppBar(
+        title: const Text('Register Akun Baru'),
+        backgroundColor: unigalColor,
+        foregroundColor: Colors.white,
+        leading: IconButton(
+          // Tombol kembali
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(), // Fungsi untuk kembali
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -18,7 +31,7 @@ class LoginScreen extends GetView<LoginController> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    "Login",
+                    "Register", // Ganti teks judul
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,
@@ -28,11 +41,15 @@ class LoginScreen extends GetView<LoginController> {
                   ),
                   const SizedBox(height: 40),
 
+                  // Field Nama
                   TextField(
-                    controller: controller.emailController,
+                    controller:
+                        controller.nameController, // Gunakan nameController
                     decoration: InputDecoration(
-                      labelText: "Name",
-                      prefixIcon: const Icon(Icons.verified_user_outlined),
+                      labelText: "Nama Lengkap", // Label yang lebih sesuai
+                      prefixIcon: const Icon(
+                        Icons.person_outline,
+                      ), // Ganti ikon jika perlu
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -41,6 +58,7 @@ class LoginScreen extends GetView<LoginController> {
                   ),
                   const SizedBox(height: 20),
 
+                  // Field Email
                   TextField(
                     controller: controller.emailController,
                     decoration: InputDecoration(
@@ -54,24 +72,27 @@ class LoginScreen extends GetView<LoginController> {
                   ),
                   const SizedBox(height: 20),
 
+                  // Field Password
                   TextField(
                     controller: controller.passwordController,
-                    obscureText: true,
+                    obscureText: true, // Sembunyikan teks password
                     decoration: InputDecoration(
                       labelText: "Password",
                       prefixIcon: const Icon(Icons.lock_outline),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      // Tambahkan ikon untuk show/hide password jika diinginkan
                     ),
                   ),
-                  const SizedBox(height: 30),
-
+                  const SizedBox(height: 20), // Kurangi jarak sedikit
+                  // Field Konfirmasi Password
                   TextField(
                     controller: controller.passwordConfirmationController,
-                    obscureText: true,
+                    obscureText: true, // Sembunyikan teks password
                     decoration: InputDecoration(
-                      labelText: "Password Confirmation",
+                      labelText:
+                          "Konfirmasi Password", // Label yang lebih sesuai
                       prefixIcon: const Icon(Icons.lock_outline),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -80,6 +101,7 @@ class LoginScreen extends GetView<LoginController> {
                   ),
                   const SizedBox(height: 30),
 
+                  // Tombol Register
                   Obx(
                     () => ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -89,6 +111,7 @@ class LoginScreen extends GetView<LoginController> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      // Nonaktifkan tombol saat loading
                       onPressed: controller.isLoading.value
                           ? null
                           : () => controller.register(),
@@ -102,7 +125,7 @@ class LoginScreen extends GetView<LoginController> {
                               ),
                             )
                           : const Text(
-                              "",
+                              "Register", // Ganti teks tombol
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -110,6 +133,26 @@ class LoginScreen extends GetView<LoginController> {
                               ),
                             ),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Opsi untuk kembali ke Login
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Sudah punya akun? "),
+                      TextButton(
+                        onPressed: () {
+                          Get.back(); // Kembali ke halaman sebelumnya (Login)
+                        },
+                        child: Text(
+                          'Login di sini',
+                          style: TextStyle(
+                            color: unigalColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

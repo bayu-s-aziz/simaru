@@ -85,6 +85,32 @@ class LoginScreen extends GetView<LoginController> {
                             ),
                     ),
                   ),
+                  const SizedBox(
+                    height: 20,
+                  ), // Jarak antara tombol login dan register
+                  // --- Tombol Register ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Belum punya akun? "),
+                      TextButton(
+                        onPressed: () {
+                          // Navigasi ke halaman register menggunakan GetX
+                          Get.toNamed(
+                            '/register',
+                          ); // Pastikan route '/register' sudah ada di main.dart
+                        },
+                        child: Text(
+                          'Register di sini',
+                          style: TextStyle(
+                            color: unigalColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // --- Akhir Tombol Register ---
                 ],
               ),
             ),
