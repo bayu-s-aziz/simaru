@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' show Client;
 
@@ -29,8 +30,8 @@ class RegisterService extends GetxService {
         return jsonDecode(response.body); // Kembalikan body jika sukses
       } else {
         // Log error untuk debugging
-        print('Registration failed: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        _log('Registration failed: ${response.statusCode}');
+        _log('Response body: ${response.body}');
         // Coba decode body jika mungkin berisi pesan error
         try {
           return jsonDecode(response.body);
@@ -41,9 +42,13 @@ class RegisterService extends GetxService {
       }
     } catch (e) {
       // Log error atau tampilkan pesan yang lebih spesifik
-      print('Error during registration: $e');
+      _log('Error during registration: $e');
       // Lemparkan exception agar controller bisa menangani error koneksi/lainnya
       throw Exception('Tidak dapat terhubung ke server.');
     }
+  }
+
+  void _log(String message) {
+    debugPrint('RegisterService: $message');
   }
 }
