@@ -53,7 +53,8 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "simaru");
   }
 
-  gtk_window_set_default_size(window, 1280, 720);
+  // Simulate a 21:9 portrait (phone-like) window within a 1280x820 desktop.
+  gtk_window_set_default_size(window, 343, 800);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);
