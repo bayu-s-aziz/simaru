@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:simaru/controllers/home_controller.dart';
 import 'package:simaru/controllers/login_controller.dart';
 import 'package:simaru/controllers/register_controller.dart'; // Import RegisterController
@@ -7,12 +8,15 @@ import 'package:simaru/screens/home_screen.dart';
 import 'package:simaru/screens/login_screen.dart';
 import 'package:simaru/screens/register_screen.dart'; // Import RegisterScreen
 import 'package:simaru/services/login_service.dart'; // Import LoginService
-import 'package:simaru/services/register_service.dart'; // Import RegisterService
-import 'package:simaru/models/user_profile.dart';
+import 'package:simaru/services/register_service.dart';
 import 'package:simaru/services/room_service.dart';
+import 'package:simaru/services/storage_service.dart';
+import 'package:simaru/models/user_profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await GetStorage.init();
+  Get.put(StorageService());
   runApp(const MainApp());
 }
 
@@ -76,6 +80,8 @@ class LoginBinding extends Bindings {
 class HomeBinding extends Bindings {
   @override
   void dependencies() {
+    final StorageService storage = Get.find<StorageService>();
+
     Map<String, dynamic>? extractProfile(dynamic payload) {
       if (payload == null) {
         return null;
@@ -212,10 +218,12 @@ class HomeBinding extends Bindings {
     }
 
     final dynamic arguments = Get.arguments;
-    final profileMap = extractProfile(arguments);
+    final profileMap = extractProfile(arguments) ?? storage.readProfile();
     final initialUserName =
-        extractUserName(arguments) ?? profileMap?['name'] as String?;
-    final token = extractToken(arguments);
+        extractUserName(arguments) ??
+        profileMap?['name'] as String? ??
+        storage.readUserName();
+    final token = extractToken(arguments) ?? storage.readToken();
 
     UserProfile? initialProfile;
     if (profileMap != null && profileMap.isNotEmpty) {
@@ -232,6 +240,7 @@ class HomeBinding extends Bindings {
         initialUserName: initialUserName,
         initialUserProfile: initialProfile,
         initialAccessToken: token,
+        storageService: storage,
       ),
     );
     // Jika Home membutuhkan service, daftarkan di sini

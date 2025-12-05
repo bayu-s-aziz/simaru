@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:simaru/services/login_service.dart';
+import 'package:simaru/services/storage_service.dart';
 
 class LoginController extends GetxController {
-  // Gunakan Get.find() karena service didaftarkan di LoginBinding
   final LoginService _service = Get.find<LoginService>();
+  final StorageService _storage = Get.find<StorageService>();
 
   var isLoading = false.obs;
 
@@ -61,6 +62,12 @@ class LoginController extends GetxController {
         if (userProfile != null && userProfile.isNotEmpty) {
           navigationPayload['user'] = userProfile;
         }
+
+        await _storage.saveAuthData(
+          token: response['accessToken'] as String?,
+          profile: userProfile,
+          name: userName,
+        );
 
         Get.offAllNamed('/home', arguments: navigationPayload);
       } else {
