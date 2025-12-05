@@ -7,7 +7,8 @@ import 'package:simaru/models/room.dart';
 class RoomService extends GetxService {
   RoomService({Client? client}) : _client = client ?? Client();
 
-  static const String _baseUrl = 'http://127.0.0.1:8001/api';
+  static const String _apiHost = 'http://127.0.0.1:8001';
+  static const String _baseUrl = '$_apiHost/api';
   final Client _client;
 
   Future<List<Room>> fetchRooms() async {
@@ -20,7 +21,7 @@ class RoomService extends GetxService {
       if (response.statusCode == 200) {
         final payload = _decodeJson(response.body);
         final roomMaps = _extractRoomMaps(payload);
-        return roomMaps.map(Room.fromMap).toList();
+        return roomMaps.map(Room.fromMap).map(_resolvePhotoUrl).toList();
       }
 
       _log('Failed to fetch rooms: ${response.statusCode}');
@@ -32,6 +33,27 @@ class RoomService extends GetxService {
       _log('Error fetching rooms: $e');
       rethrow;
     }
+  }
+
+  Room _resolvePhotoUrl(Room room) {
+    final photo = room.photo?.trim();
+    if (photo == null || photo.isEmpty) {
+      return room;
+    }
+
+    final uri = Uri.tryParse(photo);
+    if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+      return room;
+    }
+
+    var sanitizedPath = photo.startsWith('/') ? photo.substring(1) : photo;
+
+    if (!sanitizedPath.startsWith('storage/')) {
+      sanitizedPath = 'storage/$sanitizedPath';
+    }
+
+    final resolved = Uri.parse('$_apiHost/$sanitizedPath').toString();
+    return room.copyWith(photo: resolved);
   }
 
   dynamic _decodeJson(String source) {
