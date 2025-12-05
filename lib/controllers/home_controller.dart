@@ -3,19 +3,22 @@ import 'package:get/get.dart';
 import 'package:simaru/models/room.dart';
 import 'package:simaru/models/user_profile.dart';
 import 'package:simaru/services/room_service.dart';
+import 'package:simaru/services/storage_service.dart';
 
 class HomeController extends GetxController {
   HomeController({
     String? initialUserName,
     UserProfile? initialUserProfile,
     String? initialAccessToken,
-  }) {
+    required StorageService storageService,
+  }) : _storageService = storageService {
     _applyUserProfile(initialUserProfile);
     _applyUserName(initialUserName ?? initialUserProfile?.name);
     _applyAccessToken(initialAccessToken);
   }
 
   static const String _defaultUserName = 'Pengguna';
+  final StorageService _storageService;
 
   final userName = _defaultUserName.obs;
   final Rxn<UserProfile> userProfile = Rxn<UserProfile>();
@@ -123,6 +126,7 @@ class HomeController extends GetxController {
       buttonColor: unigalColor,
       cancelTextColor: unigalColor,
       onConfirm: () {
+        _storageService.clearAuth();
         Get.offAllNamed('/login');
       },
     );
@@ -134,6 +138,7 @@ class HomeController extends GetxController {
       if (userName.value != trimmed) {
         userName.value = trimmed;
         debugPrint('HomeController updated userName: ${userName.value}');
+        _persistAuthState();
       }
       return true;
     }
@@ -152,6 +157,7 @@ class HomeController extends GetxController {
       if (profile.name != null && profile.name!.trim().isNotEmpty) {
         _applyUserName(profile.name);
       }
+      _persistAuthState();
     }
   }
 
@@ -161,8 +167,17 @@ class HomeController extends GetxController {
       if (accessToken.value != trimmed) {
         accessToken.value = trimmed;
         debugPrint('HomeController stored accessToken');
+        _persistAuthState();
       }
     }
+  }
+
+  void _persistAuthState() {
+    _storageService.saveAuthData(
+      token: accessToken.value,
+      name: userName.value == _defaultUserName ? null : userName.value,
+      profile: userProfile.value?.toMap(),
+    );
   }
 
   String? _resolveNameFromPayload(dynamic payload) {
