@@ -1,6 +1,6 @@
 name: simaru
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
@@ -9,8 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  get: ^4.7.2 
-  http: ^1.1.0 
+  get: ^4.7.2
+  http: ^1.1.0
   get_storage: ^2.0.5
 
 dev_dependencies:
