@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:simaru/models/room.dart';
@@ -28,6 +29,7 @@ class HomeController extends GetxController {
   final rooms = <Room>[].obs;
   final roomsError = RxnString();
   final roomsLoading = false.obs;
+  final searchQuery = ''.obs;
 
   final unigalColor = const Color(0xFF592974);
 
@@ -91,6 +93,25 @@ class HomeController extends GetxController {
     }
   }
 
+  List<Room> get filteredRooms {
+    final query = searchQuery.value.trim().toLowerCase();
+    if (query.isEmpty) {
+      return rooms;
+    }
+    return rooms.where((room) {
+      final name = room.displayName.toLowerCase();
+      final faculty = room.displayFaculty.toLowerCase();
+      final status = room.displayStatus.toLowerCase();
+      return name.contains(query) ||
+          faculty.contains(query) ||
+          status.contains(query);
+    }).toList();
+  }
+
+  void updateSearchQuery(String value) {
+    searchQuery.value = value;
+  }
+
   Future<void> loadRooms({bool forceRefresh = false}) async {
     if (roomsLoading.value) {
       return;
@@ -113,6 +134,113 @@ class HomeController extends GetxController {
       debugPrint('HomeController: Failed to load rooms: $message');
     } finally {
       roomsLoading.value = false;
+    }
+  }
+
+  Future<void> addRoom({
+    required String name,
+    String? facultyName,
+    int? capacity,
+    String? status,
+    String? photo,
+    PlatformFile? photoFile,
+  }) async {
+    try {
+      final created = await _roomService.createRoom(
+        name: name,
+        facultyName: facultyName,
+        capacity: capacity,
+        status: status,
+        photo: photo,
+        photoFile: photoFile,
+        token: accessToken.value,
+      );
+      rooms.insert(0, created);
+      Get.snackbar(
+        'Sukses',
+        'Ruangan berhasil ditambahkan.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> editRoom(
+    Room room, {
+    required String name,
+    String? facultyName,
+    int? capacity,
+    String? status,
+    String? photo,
+    PlatformFile? photoFile,
+  }) async {
+    try {
+      final updated = await _roomService.updateRoom(
+        id: room.id,
+        name: name,
+        facultyName: facultyName,
+        capacity: capacity,
+        status: status,
+        photo: photo,
+        photoFile: photoFile,
+        token: accessToken.value,
+      );
+
+      final index = rooms.indexWhere((r) => r.id == room.id);
+      if (index != -1) {
+        rooms[index] = updated;
+      }
+
+      Get.snackbar(
+        'Sukses',
+        'Ruangan berhasil diperbarui.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> removeRoom(Room room) async {
+    if (room.id == null) {
+      Get.snackbar(
+        'Error',
+        'ID ruangan tidak valid.',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      await _roomService.deleteRoom(room.id, token: accessToken.value);
+      rooms.removeWhere((r) => r.id == room.id);
+      Get.snackbar(
+        'Sukses',
+        'Ruangan berhasil dihapus.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:simaru/controllers/home_controller.dart';
@@ -13,11 +14,13 @@ class RoomsTab extends StatelessWidget {
     return Obx(() {
       final isLoading = controller.roomsLoading.value;
       final errorMessage = controller.roomsError.value;
-      final rooms = controller.rooms;
+      final rooms = controller.filteredRooms;
 
-      if (isLoading && rooms.isEmpty) {
+      if (isLoading && controller.rooms.isEmpty) {
         return const Center(child: CircularProgressIndicator());
       }
+
+      final hasRooms = rooms.isNotEmpty;
 
       return RefreshIndicator(
         onRefresh: () => controller.loadRooms(forceRefresh: true),
@@ -27,29 +30,69 @@ class RoomsTab extends StatelessWidget {
           shrinkWrap: true,
           primary: false,
           physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: rooms.isEmpty ? 1 : rooms.length,
+          itemCount: hasRooms ? rooms.length + 1 : 2,
           itemBuilder: (context, index) {
-            if (rooms.isEmpty) {
-              if (errorMessage != null) {
-                return _buildRoomsMessage(
-                  icon: Icons.error_outline,
-                  message:
-                      'Gagal memuat data ruangan. Coba tarik ke bawah untuk menyegarkan.',
-                  detail: errorMessage,
-                );
-              }
-              return _buildRoomsMessage(
-                icon: Icons.meeting_room_outlined,
-                message: 'Belum ada data ruangan yang tersedia.',
+            if (index == 0) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSearchAndAddBar(context),
+                  const SizedBox(height: 12),
+                ],
               );
             }
 
-            final room = rooms[index];
-            return _buildRoomCard(room);
+            if (!hasRooms && index == 1) {
+              final message =
+                  errorMessage ??
+                  (controller.rooms.isEmpty
+                      ? 'Belum ada data ruangan yang tersedia.'
+                      : 'Tidak ada ruangan yang cocok dengan pencarian.');
+              return _buildRoomsMessage(
+                icon: Icons.meeting_room_outlined,
+                message: message,
+              );
+            }
+
+            final room = rooms[index - 1];
+            return _buildRoomCard(context, room);
           },
         ),
       );
     });
+  }
+
+  Widget _buildSearchAndAddBar(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            onChanged: controller.updateSearchQuery,
+            decoration: InputDecoration(
+              hintText: 'Cari ruangan, fakultas, atau status...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: controller.unigalColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onPressed: () => _showRoomForm(context),
+          icon: const Icon(Icons.add),
+          label: const Text('Tambah'),
+        ),
+      ],
+    );
   }
 
   Widget _buildRoomsMessage({
@@ -87,7 +130,7 @@ class RoomsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRoomCard(Room room) {
+  Widget _buildRoomCard(BuildContext context, Room room) {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16.0),
@@ -135,6 +178,33 @@ class RoomsTab extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    room.displayStatus,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: controller.unigalColor,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _showRoomForm(context, room: room),
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text('Edit'),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _confirmDelete(context, room),
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Hapus'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -176,6 +246,175 @@ class RoomsTab extends StatelessWidget {
         size: 40,
         color: controller.unigalColor,
       ),
+    );
+  }
+
+  Future<void> _showRoomForm(BuildContext context, {Room? room}) async {
+    final nameCtrl = TextEditingController(text: room?.name ?? '');
+    final facultyCtrl = TextEditingController(text: room?.facultyName ?? '');
+    final capacityCtrl = TextEditingController(
+      text: room?.capacity?.toString() ?? '',
+    );
+    final statusCtrl = TextEditingController(text: room?.status ?? '');
+    PlatformFile? selectedPhoto;
+    final hasExistingPhoto = room?.photo?.trim().isNotEmpty ?? false;
+
+    await showDialog(
+      context: context,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(room == null ? 'Tambah Ruangan' : 'Edit Ruangan'),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Ruangan',
+                      ),
+                    ),
+                    TextField(
+                      controller: facultyCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Fakultas',
+                      ),
+                    ),
+                    TextField(
+                      controller: capacityCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Kapasitas'),
+                    ),
+                    TextField(
+                      controller: statusCtrl,
+                      decoration: const InputDecoration(labelText: 'Status'),
+                    ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Foto',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            selectedPhoto?.name ??
+                                (hasExistingPhoto
+                                    ? 'Foto saat ini akan dipertahankan'
+                                    : 'Belum ada foto'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final result = await FilePicker.platform.pickFiles(
+                              type: FileType.image,
+                              withData: true,
+                            );
+
+                            if (result != null && result.files.isNotEmpty) {
+                              setState(() {
+                                selectedPhoto = result.files.first;
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.photo_library_outlined),
+                          label: const Text('Pilih'),
+                        ),
+                      ],
+                    ),
+                    if (selectedPhoto != null)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () => setState(() => selectedPhoto = null),
+                          child: const Text('Hapus pilihan'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final name = nameCtrl.text.trim();
+                    if (name.isEmpty) {
+                      Get.snackbar(
+                        'Error',
+                        'Nama ruangan wajib diisi.',
+                        backgroundColor: Colors.red,
+                        colorText: Colors.white,
+                      );
+                      return;
+                    }
+
+                    final capacity = int.tryParse(capacityCtrl.text.trim());
+                    final facultyName = facultyCtrl.text.trim().isEmpty
+                        ? null
+                        : facultyCtrl.text.trim();
+                    final status = statusCtrl.text.trim().isEmpty
+                        ? null
+                        : statusCtrl.text.trim();
+
+                    if (room == null) {
+                      controller.addRoom(
+                        name: name,
+                        facultyName: facultyName,
+                        capacity: capacity,
+                        status: status,
+                        photoFile: selectedPhoto,
+                      );
+                    } else {
+                      controller.editRoom(
+                        room,
+                        name: name,
+                        facultyName: facultyName,
+                        capacity: capacity,
+                        status: status,
+                        photoFile: selectedPhoto,
+                      );
+                    }
+                    Get.back();
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    nameCtrl.dispose();
+    facultyCtrl.dispose();
+    capacityCtrl.dispose();
+    statusCtrl.dispose();
+  }
+
+  void _confirmDelete(BuildContext context, Room room) {
+    Get.defaultDialog(
+      title: 'Hapus Ruangan',
+      middleText: 'Anda yakin ingin menghapus "${room.displayName}"?',
+      textConfirm: 'Hapus',
+      textCancel: 'Batal',
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.red,
+      cancelTextColor: controller.unigalColor,
+      onConfirm: () {
+        Get.back();
+        controller.removeRoom(room);
+      },
     );
   }
 }
